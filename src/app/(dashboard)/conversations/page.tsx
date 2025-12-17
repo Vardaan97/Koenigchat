@@ -198,9 +198,13 @@ export default function ConversationsPage() {
                           {conversation.status}
                         </Badge>
                         {conversation.is_bot_handling ? (
-                          <Bot className="h-4 w-4 text-muted-foreground" title="AI handling" />
+                          <span title="AI handling">
+                            <Bot className="h-4 w-4 text-muted-foreground" />
+                          </span>
                         ) : (
-                          <User className="h-4 w-4 text-muted-foreground" title="Human agent" />
+                          <span title="Human agent">
+                            <User className="h-4 w-4 text-muted-foreground" />
+                          </span>
                         )}
                       </div>
                     </div>

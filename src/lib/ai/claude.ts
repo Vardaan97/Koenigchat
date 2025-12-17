@@ -1,8 +1,19 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+// Lazy initialization to avoid build-time errors
+let anthropicInstance: Anthropic | null = null;
+
+function getAnthropic(): Anthropic {
+  if (!anthropicInstance) {
+    if (!process.env.ANTHROPIC_API_KEY) {
+      throw new Error('ANTHROPIC_API_KEY environment variable is not set');
+    }
+    anthropicInstance = new Anthropic({
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    });
+  }
+  return anthropicInstance;
+}
 
 export interface ClaudeMessage {
   role: 'user' | 'assistant';
@@ -30,7 +41,7 @@ export async function generateResponse(
   const maxTokens = options?.maxTokens || 500; // Keep responses concise
   const temperature = options?.temperature ?? 0.7;
 
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model,
     max_tokens: maxTokens,
     temperature,
@@ -63,7 +74,7 @@ export async function classifyIntent(
   urgency: string;
   lead_ready: boolean;
 }> {
-  const response = await anthropic.messages.create({
+  const response = await getAnthropic().messages.create({
     model: 'claude-sonnet-4-20250514', // Fast model for classification
     max_tokens: 200,
     temperature: 0,

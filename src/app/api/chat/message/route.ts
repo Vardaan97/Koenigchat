@@ -2,7 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { generateChatResponse, extractLeadInfo } from '@/lib/ai/orchestrator';
-import type { Message, ChatRequest, ChatResponse, PageContext } from '@/types';
+import type { Message, ChatRequest, ChatResponse, PageContext, KnowledgeSource, SearchResult } from '@/types';
+
+// Transform SearchResult to KnowledgeSource format
+function toKnowledgeSource(result: SearchResult): KnowledgeSource {
+  return {
+    type: result.source_type,
+    id: result.source_id,
+    title: result.title,
+    url: result.url,
+    similarity: result.similarity,
+  };
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,6 +119,7 @@ export async function POST(request: NextRequest) {
 
     // Save assistant message
     const assistantMessageId = uuidv4();
+    const sourcesUsed = aiResponse.sources.map(toKnowledgeSource);
     const assistantMessage = {
       id: assistantMessageId,
       conversation_id: currentConversationId,
@@ -118,7 +130,7 @@ export async function POST(request: NextRequest) {
       tokens_input: aiResponse.tokens_input,
       tokens_output: aiResponse.tokens_output,
       response_time_ms: aiResponse.response_time_ms,
-      sources_used: aiResponse.sources,
+      sources_used: sourcesUsed,
     };
 
     await supabase.from('messages').insert(assistantMessage);
@@ -139,7 +151,7 @@ export async function POST(request: NextRequest) {
         content_type: 'text',
         model_used: aiResponse.model,
         response_time_ms: aiResponse.response_time_ms,
-        sources_used: aiResponse.sources,
+        sources_used: sourcesUsed,
         flagged: false,
         metadata: {},
         created_at: new Date().toISOString(),
